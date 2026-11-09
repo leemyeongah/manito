@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>1본부 2팀 마니또 뽑기</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* Layout: one narrow column. Organizer view = names in, personal links out. Participant view (opened from a personal link) = one sealed envelope to tap open. */
+:root{
+  --bg:#F3F5F2; --surface:#FFFFFF; --fg:#1C2621; --muted:#5E6B64; --line:#D9E0DB;
+  --accent:#1F5F4A; --accent-fg:#FFFFFF; --seal:#B83A33; --soft:#E6EFEA; --paper:#FBF7EE; --paper-line:#E7DCC6;
+  --display:"Do Hyeon","Noto Sans KR",system-ui,sans-serif;
+  --body:"Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121815; --surface:#1A221E; --fg:#E7EEE9; --muted:#9AA8A0; --line:#2C3832;
+  --accent:#6CC3A0; --accent-fg:#0E1A14; --seal:#E5746C; --soft:#21302A; --paper:#2A2620; --paper-line:#3E372C; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121815; --surface:#1A221E; --fg:#E7EEE9; --muted:#9AA8A0; --line:#2C3832;
+  --accent:#6CC3A0; --accent-fg:#0E1A14; --seal:#E5746C; --soft:#21302A; --paper:#2A2620; --paper-line:#3E372C; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.6}
+.wrap{max-width:560px;margin:0 auto;padding-block:32px 56px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:20px}
+h1{font-family:var(--display);font-weight:400;font-size:34px;line-height:1.2;margin:0;text-wrap:balance}
+h1 span{color:var(--seal)}
+.lede{color:var(--muted);margin:0}
+.panel{display:flex;flex-direction:column;gap:16px}
+label{font-weight:700;font-size:14px}
+.hint{font-size:13px;color:var(--muted);margin:0}
+textarea{width:100%;box-sizing:border-box;border:1px solid var(--line);background:var(--surface);color:var(--fg);
+  border-radius:10px;padding:12px 14px;font:15px/1.7 var(--body);min-height:170px;resize:vertical}
+textarea:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.field{display:flex;flex-direction:column;gap:6px}
+.btn{border:0;background:var(--accent);color:var(--accent-fg);font:700 15px var(--body);padding:13px 18px;border-radius:10px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--line);font-weight:500;font-size:13px;padding:8px 12px;white-space:nowrap}
+.err{color:var(--seal);font-size:14px;margin:0}
+.count{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px;font-size:14px}
+.note{background:var(--soft);border-radius:10px;padding:14px 16px;font-size:14px;display:flex;flex-direction:column;gap:8px}
+.list{display:flex;flex-direction:column;gap:10px}
+.row{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;gap:12px;align-items:center}
+.row .dot{flex:none;width:34px;height:34px;border-radius:50%;background:var(--seal);color:#fff;display:grid;place-items:center;font-size:15px}
+.row .name{flex:1;min-width:0;font-weight:700;overflow-wrap:anywhere}
+.row .state{font-size:12px;color:var(--muted);font-weight:400;display:block}
+.row.done{opacity:.55}
+.btns{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+
+/* participant envelope */
+.stage{display:flex;flex-direction:column;align-items:center;gap:18px;padding-top:12px}
+.envelope{position:relative;width:min(320px,100%);aspect-ratio:3/2;max-width:100%;border:0;padding:0;cursor:pointer;background:transparent}
+.envelope .body{position:absolute;inset:0;background:var(--paper);border:1px solid var(--paper-line);border-radius:10px;overflow:hidden}
+.envelope .flap{position:absolute;inset:0 0 40% 0;background:var(--paper);border-bottom:1px solid var(--paper-line);
+  clip-path:polygon(0 0,100% 0,50% 100%);transform-origin:top;transition:transform .5s ease}
+.envelope .wax{position:absolute;left:50%;top:60%;transform:translate(-50%,-50%);width:56px;height:56px;border-radius:50%;
+  background:var(--seal);color:#fff;display:grid;place-items:center;font-family:var(--display);font-size:20px;box-shadow:0 2px 6px rgb(0 0 0 / .2);transition:opacity .3s}
+.envelope .card{position:absolute;inset:14% 8%;background:var(--surface);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;opacity:0;transition:opacity .4s .25s}
+.envelope.open .flap{transform:rotateX(180deg);opacity:0}
+.envelope.open .wax{opacity:0}
+.envelope.open .card{opacity:1}
+.card small{color:var(--muted);font-size:13px}
+.card .to{font-family:var(--display);font-size:clamp(32px,10vw,46px);line-height:1.1;color:var(--seal);text-align:center;overflow-wrap:anywhere;padding:0 8px}
+.for{font-family:var(--display);font-size:26px;margin:0;text-align:center}
+@media (prefers-reduced-motion:reduce){.envelope *{transition:none!important}}
+</style>
+<style>body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+
+<div class="wrap">
+  <!-- 진행자 화면 -->
+  <section id="view-make" class="panel">
+    <header style="display:flex;flex-direction:column;gap:8px">
+      <h1>1본부 2팀 <span>마니또</span> 뽑기</h1>
+      <p class="lede">자기 자신만 빼고 무작위로 뽑아요. 결과는 각자 받은 개인 링크로 본인만 볼 수 있고, 진행자 화면에는 나오지 않아요.</p>
+    </header>
+
+    <div class="field">
+      <label for="names">참가자 이름 (한 줄에 한 명)</label>
+      <textarea id="names" spellcheck="false">수연
+이슬
+현정
+진호
+민주
+지수
+명아
+승현</textarea>
+      <span class="count" id="count"></span>
+    </div>
+    <button class="btn" id="draw">마니또 뽑기</button>
+    <p class="err" id="err" hidden></p>
+
+    <div id="result" class="panel" hidden>
+      <div class="note">
+        <b>이제 사람마다 개인 링크를 보내면 끝이에요.</b>
+        <ol class="steps">
+          <li>이름 옆 <b>메시지 복사</b>를 눌러요.</li>
+          <li>그 사람에게 슬랙·카톡 <b>개인 DM</b>으로 붙여넣어 보내요.</li>
+          <li>받은 사람은 링크를 열고 봉투를 누르면 자기 마니또가 보여요.</li>
+        </ol>
+        <span class="hint">다시 뽑으면 링크가 전부 바뀌어요. 보내기 시작한 뒤에는 다시 뽑지 마세요.</span>
+      </div>
+      <div class="list" id="list"></div>
+    </div>
+  </section>
+
+  <!-- 참가자 화면 (개인 링크로 열림) -->
+  <section id="view-open" class="stage" hidden>
+    <p class="for" id="for"></p>
+    <button class="envelope" id="env" aria-label="봉투 열기">
+      <span class="body"></span>
+      <span class="card"><small>당신의 마니또는</small><span class="to" id="to"></span><small>들키지 않게 챙겨주세요</small></span>
+      <span class="flap"></span>
+      <span class="wax">비밀</span>
+    </button>
+    <p class="hint" id="tapHint">옆에 아무도 없을 때 봉투를 눌러 열어 보세요.</p>
+    <button class="btn ghost" id="close" hidden>다시 가리기</button>
+  </section>
+
+  <section id="view-bad" class="panel" hidden>
+    <h1>링크를 <span>읽을 수 없어요</span></h1>
+    <p class="lede">받은 링크가 중간에 잘린 것 같아요. 진행자에게 받은 링크 전체를 다시 복사해서 열어 주세요.</p>
+  </section>
+</div>
+
+<script>
+(function(){
+  const BASE=location.href.split('#')[0];
+  const KEY=[0x4d,0x61,0x6e,0x69,0x74,0x74,0x6f,0x21,0x9e,0x37,0x5b,0xc2,0x18,0xa4,0x63,0x0d];
+  const $=id=>document.getElementById(id);
+  const hex=b=>Array.from(b,x=>x.toString(16).padStart(2,'0')).join('');
+
+  function enc(g,r){
+    const bytes=new TextEncoder().encode(g+'\u0001'+r);
+    const salt=crypto.getRandomValues(new Uint8Array(2));
+    const out=new Uint8Array(bytes.length+3);out.set(salt,0);
+    let sum=0;
+    bytes.forEach((b,i)=>{sum=(sum+b*(i+1))&255;out[i+2]=b^KEY[i%KEY.length]^salt[i%2]^((i*31)&255)});
+    out[out.length-1]=sum^salt[1];
+    return 'm'+hex(out);
+  }
+  function dec(t){
+    if(!/^m([0-9a-f]{2}){5,}$/.test(t)) throw 0;
+    const raw=new Uint8Array(t.slice(1).match(/../g).map(h=>parseInt(h,16)));
+    const salt=raw.slice(0,2),body=raw.slice(2,raw.length-1);
+    let sum=0;
+    const bytes=body.map((b,i)=>{const v=b^KEY[i%KEY.length]^salt[i%2]^((i*31)&255);sum=(sum+v*(i+1))&255;return v});
+    if((sum^salt[1])!==raw[raw.length-1]) throw 0;
+    const [g,r]=new TextDecoder().decode(bytes).split('\u0001');
+    if(!g||!r) throw 0;
+    return {g,r};
+  }
+
+  const names=()=>$('names').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const updateCount=()=>$('count').textContent='참가자 '+names().length+'명';
+  $('names').addEventListener('input',updateCount);updateCount();
+
+  function shuffle(a){
+    for(let i=a.length-1;i>0;i--){const r=crypto.getRandomValues(new Uint32Array(1))[0]%(i+1);[a[i],a[r]]=[a[r],a[i]]}
+    return a;
+  }
+
+  async function copy(text,btn,label){
+    const ok=()=>{btn.textContent='복사됨 ✓';btn.closest('.row').classList.add('done');btn.closest('.row').querySelector('.state').textContent='복사함';setTimeout(()=>btn.textContent=label,1500)};
+    try{await navigator.clipboard.writeText(text);ok()}
+    catch(e){
+      const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();
+      try{document.execCommand('copy');ok()}catch(_){btn.textContent='복사 실패'}
+      ta.remove();
+    }
+  }
+
+  $('draw').addEventListener('click',()=>{
+    const list=names(),err=$('err');err.hidden=true;
+    if(list.length<2){err.textContent='최소 2명 이상 입력해 주세요.';err.hidden=false;return}
+    if(new Set(list).size!==list.length){err.textContent='같은 이름이 있어요. 구분되게 바꿔 주세요 (예: 지훈A, 지훈B).';err.hidden=false;return}
+    // 무작위로 섞되 자기 자신이 나오면 다시 섞음 (서로 뽑기는 허용)
+    let perm;do{perm=shuffle(list.slice())}while(perm.some((r,i)=>r===list[i]));
+    const box=$('list');box.innerHTML='';
+    list.forEach((g,i)=>{
+      const link=BASE+'#'+enc(g,perm[i]);
+      const msg=`[1본부 2팀 마니또] ${g}님 전용 링크예요 🎁\n${link}\n\n링크를 열고 봉투를 누르면 마니또가 나와요. 다른 사람한테는 비밀!`;
+      const el=document.createElement('div');el.className='row';
+      el.innerHTML='<div class="dot" aria-hidden="true">✉</div><div class="name"><span class="n"></span><span class="state">아직 안 보냄</span></div><div class="btns"><button class="btn ghost m">메시지 복사</button><button class="btn ghost l">링크만</button></div>';
+      el.querySelector('.n').textContent=g;
+      el.querySelector('.m').addEventListener('click',e=>copy(msg,e.currentTarget,'메시지 복사'));
+      el.querySelector('.l').addEventListener('click',e=>copy(link,e.currentTarget,'링크만'));
+      box.appendChild(el);
+    });
+    $('result').hidden=false;
+    $('draw').textContent='다시 뽑기 (링크 전부 바뀜)';
+  });
+
+  // 참가자 봉투
+  $('env').addEventListener('click',()=>{$('env').classList.add('open');$('tapHint').hidden=true;$('close').hidden=false});
+  $('close').addEventListener('click',()=>{$('env').classList.remove('open');$('tapHint').hidden=false;$('close').hidden=true});
+
+  function route(){
+    const t=location.hash.slice(1);
+    $('view-make').hidden=true;$('view-open').hidden=true;$('view-bad').hidden=true;
+    if(t.startsWith('m')){
+      try{
+        const d=dec(t);
+        $('for').textContent=d.g+'님에게 온 비밀 봉투';
+        $('to').textContent=d.r;
+        $('env').classList.remove('open');$('close').hidden=true;$('tapHint').hidden=false;
+        $('view-open').hidden=false;
+      }catch(_){$('view-bad').hidden=false}
+    }else $('view-make').hidden=false;
+  }
+  window.addEventListener('hashchange',route);route();
+})();
+</script>
+
+</body>
+</html>
